@@ -33,8 +33,59 @@ export function createRouter() {
     // 从环境变量读取会话过期天数，默认7天
     const SESSION_EXPIRE_DAYS = parseInt(env.SESSION_EXPIRE_DAYS, 10) || 7;
 
+    async function parseLoginBody(req) {
+      const contentType = String(req.headers.get('content-type') || '').toLowerCase();
+      const raw = await req.text();
+      const text = String(raw || '').trim();
+      if (!text) return null;
+
+      if (contentType.includes('application/json')) {
+        return JSON.parse(text);
+      }
+
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        const form = new URLSearchParams(text);
+        return {
+          username: form.get('username') || '',
+          password: form.get('password') || ''
+        };
+      }
+
+      // 容错：未知类型先尝试 JSON，再尝试表单
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        const form = new URLSearchParams(text);
+        return {
+          username: form.get('username') || '',
+          password: form.get('password') || ''
+        };
+      }
+    }
+
     try {
-      const body = await request.json();
+      let body;
+      try {
+        body = await parseLoginBody(request);
+      } catch (parseError) {
+        console.error('[login] body parse failed:', {
+          method: request.method,
+          contentType: request.headers.get('content-type') || '',
+          contentLength: request.headers.get('content-length') || '',
+          error: parseError?.message || String(parseError)
+        });
+        return new Response('Bad Request', { status: 400 });
+      }
+
+      if (!body || typeof body !== 'object') {
+        console.error('[login] empty or invalid body:', {
+          method: request.method,
+          contentType: request.headers.get('content-type') || '',
+          contentLength: request.headers.get('content-length') || ''
+        });
+        return new Response('Bad Request', { status: 400 });
+      }
+
       const name = String(body.username || '').trim().toLowerCase();
       const password = String(body.password || '').trim();
 
@@ -120,7 +171,8 @@ export function createRouter() {
       }
 
       return new Response('用户名或密码错误', { status: 401 });
-    } catch (_) {
+    } catch (error) {
+      console.error('[login] unexpected error:', error?.stack || error?.message || String(error));
       return new Response('Bad Request', { status: 400 });
     }
   });
