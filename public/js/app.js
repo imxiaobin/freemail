@@ -133,6 +133,15 @@ window.showSentEmail = async (id) => { try { const r = await api(`/api/sent/${id
 window.deleteEmail = (id) => deleteEmailById(id, api, showToast, showConfirm, refresh);
 window.deleteSent = (id) => deleteSentById(id, api, showToast, showConfirm, refresh);
 window.copyFromList = (e, id) => copyFromEmailList(e, id, api, showToast);
+window.copyCardCode = (id, code) => {
+  if (code) {
+    navigator.clipboard.writeText(code)
+      .then(() => showToast(`验证码 ${code} 已复制`, 'success'))
+      .catch(() => showToast('复制失败', 'error'));
+  } else {
+    showEmailDetail(id, els, api, showToast);
+  }
+};
 window.refreshEmails = refresh;
 
 // 事件绑定

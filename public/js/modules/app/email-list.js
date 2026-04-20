@@ -168,8 +168,11 @@ export function renderEmailItem(email, isMobile = false) {
   const metaText = isSentView ? escapeHtml(recipientsDisplay) : senderText;
   const timeDisplay = isMobile ? formatTsMobile(e.received_at || e.created_at) : formatTs(e.received_at || e.created_at);
   
+  const cardOnclick = isSentView ? `showSentEmail(${e.id})` : `copyCardCode(${e.id}, '${listCode}')`;
+  const cardTitle = isSentView ? '' : (listCode ? `点击复制验证码: ${listCode}` : '点击复制邮件内容');
+
   return `
-    <div class="email-item clickable" onclick="${isSentView ? `showSentEmail(${e.id})` : `showEmail(${e.id})`}">
+    <div class="email-item clickable" onclick="${cardOnclick}" title="${cardTitle}" style="${!isSentView ? 'cursor:copy' : ''}">
       <div class="email-meta">
         <span class="meta-from"><span class="meta-label">${metaLabel}</span><span class="meta-from-text">${metaText}</span></span>
         <span class="email-time"><span class="time-icon">🕐</span>${timeDisplay}</span>
@@ -184,6 +187,7 @@ export function renderEmailItem(email, isMobile = false) {
             <span class="status-badge ${statusClass(e.status)}">${e.status || 'unknown'}</span>
             <button class="btn btn-danger btn-sm" onclick="deleteSent(${e.id});event.stopPropagation()" title="删除记录"><span class="btn-icon">🗑️</span></button>
           ` : `
+            <button class="btn btn-primary btn-sm" onclick="showEmail(${e.id});event.stopPropagation()" title="查看邮件详情"><span class="btn-icon">👁️</span></button>
             <button class="btn btn-secondary btn-sm" data-code="${listCode || ''}" onclick="copyFromList(event, ${e.id});event.stopPropagation()" title="复制内容或验证码"><span class="btn-icon">📋</span></button>
             <button class="btn btn-danger btn-sm" onclick="deleteEmail(${e.id});event.stopPropagation()" title="删除邮件"><span class="btn-icon">🗑️</span></button>
           `}
